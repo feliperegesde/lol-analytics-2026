@@ -1,6 +1,6 @@
 # 🐾 LoL Esports Analytics & AI Engine 2026
 
-A high-performance analytical, predictive, and machine learning dashboard built for the 2026 professional League of Legends season, focused on analyzing FURIA's performance.
+A high-performance analytical, predictive, and machine learning dashboard built for the 2026 professional League of Legends season, focused on analyzing FURIA's performance (and other irrelevant teams).
 
 ---
 
