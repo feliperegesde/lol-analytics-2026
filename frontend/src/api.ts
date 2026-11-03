@@ -17,4 +17,9 @@ export const api = {
   },
   runSimulation: (team1: string, team2: string, format: string) => 
     fetch(`${BASE_URL}/simulate?team1=${team1}&team2=${team2}&format=${format}`).then(r => r.json()),
+  // NOVA ROTA AQUI:
+  getChampions: (team: string) => fetch(`${BASE_URL}/champions/${team}`).then(r => r.json()),
+  // Adicione esta linha no seu api.ts, antes da última chave fechando `}`
+  getAllTournaments: () => fetch(`${BASE_URL}/all-tournaments`).then(r => r.json()),
+  getGlobalMeta: (tournament: string = "Todos") => fetch(`${BASE_URL}/meta?tournament=${tournament}`).then(r => r.json()),
 };

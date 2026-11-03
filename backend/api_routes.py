@@ -180,3 +180,103 @@ def get_team_stats(team_name: str, tournament: str = "Todos", side: str = "Ambos
             "first_dragon": round((sub[sub['firstdragon'] == 1]['result'].mean() * 100), 1) if 'firstdragon' in sub.columns and len(sub[sub['firstdragon'] == 1]) > 0 else 0.0
         }
     }
+
+@router.get("/api/champions/{team_name}")
+def get_team_champions(team_name: str):
+    if state.df_full is None: return {"error": "Sem dados globais"}
+    
+    players = state.df_full[state.df_full['position'].str.lower() != 'team'].copy()
+    games = state.df_full[state.df_full['position'].str.lower() == 'team'].copy()
+    
+    # Cada jogo tem 2 linhas na tabela 'games' (uma pra cada time)
+    total_games = len(games) / 2 if len(games) > 0 else 1
+    
+    # 1. Dispersão Global (Meta)
+    champ_stats = players.groupby('champion').agg(picks=('champion', 'count'), wins=('result', 'sum')).reset_index()
+    champ_stats['pick_rate'] = round((champ_stats['picks'] / total_games) * 100, 1)
+    champ_stats['win_rate'] = round((champ_stats['wins'] / champ_stats['picks']) * 100, 1)
+    meta_scatter = champ_stats[champ_stats['picks'] >= 10][['champion', 'pick_rate', 'win_rate']].to_dict(orient='records')
+    
+    # 2. Presença Global (Mais Contestados do Mundo = Picks + Bans)
+    bans = pd.concat([games['ban1'], games['ban2'], games['ban3'], games['ban4'], games['ban5']]).dropna()
+    ban_counts = bans.value_counts().reset_index()
+    ban_counts.columns = ['champion', 'bans']
+    
+    presence = pd.merge(champ_stats, ban_counts, on='champion', how='outer').fillna(0)
+    presence['total_presence'] = presence['picks'] + presence['bans']
+    presence['presence_rate'] = round((presence['total_presence'] / total_games) * 100, 1)
+    global_presence = presence.sort_values('presence_rate', ascending=False).head(5)[['champion', 'presence_rate', 'picks', 'bans']].to_dict(orient='records')
+    
+    # 3. Comfort Picks da Equipe Selecionada
+    team_players = players[players['teamname'].str.lower() == team_name.lower()]
+    team_champs = team_players.groupby('champion').agg(picks=('champion', 'count'), wins=('result', 'sum')).reset_index()
+    team_champs['win_rate'] = round((team_champs['wins'] / team_champs['picks']) * 100, 1)
+    top_team_champs = team_champs.sort_values(by='picks', ascending=False).head(5).to_dict(orient='records')
+    
+    # 4. Target Bans (O que os adversários banem contra a equipe)
+    team_games = games[games['teamname'].str.lower() == team_name.lower()]['gameid']
+    opponents = games[(games['gameid'].isin(team_games)) & (games['teamname'].str.lower() != team_name.lower())]
+    opp_bans = pd.concat([opponents['ban1'], opponents['ban2'], opponents['ban3'], opponents['ban4'], opponents['ban5']]).dropna()
+    
+    opp_ban_counts = opp_bans.value_counts().reset_index().head(5)
+    opp_ban_counts.columns = ['champion', 'bans']
+    target_bans = opp_ban_counts.to_dict(orient='records')
+
+    return {
+        "team": team_name,
+        "meta_scatter": meta_scatter,
+        "global_presence": global_presence,
+        "top_champions": top_team_champs,
+        "target_bans": target_bans
+    }
+
+@router.get("/api/all-tournaments")
+def get_all_tournaments():
+    if state.df_global is None: return {"tournaments": ["Todos"]}
+    return {"tournaments": ["Todos"] + sorted(state.df_global['league'].dropna().unique().tolist())}
+
+@router.get("/api/meta")
+def get_global_meta(tournament: str = "Todos"):
+    if state.df_global is None or state.df_full is None: return {"error": "Sem dados globais"}
+    
+    df_g = state.df_global.copy()
+    df_f = state.df_full.copy()
+    
+    # Filtra as bases se não for o Mundo inteiro
+    if tournament != "Todos":
+        df_g = df_g[df_g['league'].str.lower() == tournament.lower()]
+        gameids = df_g['gameid'].unique()
+        df_f = df_f[df_f['gameid'].isin(gameids)]
+        
+    if df_g.empty: return {"error": "Vazio"}
+
+    # 1. Lado do Mapa
+    sides = df_g.groupby('side').agg(wins=('result', 'sum'), total=('result', 'count')).reset_index()
+    sides['win_rate'] = round((sides['wins'] / sides['total']) * 100, 1)
+    
+    # 2. Melhores Times (Se for regional, basta 3 jogos. Se for Global, exige 10 jogos)
+    teams = df_g.groupby('teamname').agg(wins=('result', 'sum'), total=('result', 'count')).reset_index()
+    teams = teams[teams['total'] >= (10 if tournament == "Todos" else 3)]
+    teams['win_rate'] = round((teams['wins'] / teams['total']) * 100, 1)
+    
+    # 3. Picks e Bans
+    players = df_f[df_f['position'].str.lower() != 'team']
+    games = df_f[df_f['position'].str.lower() == 'team']
+    total_games = len(games) / 2 if len(games) > 0 else 1
+
+    pick_counts = players['champion'].value_counts().reset_index().head(5)
+    pick_counts.columns = ['champion', 'count']
+    pick_counts['rate'] = round((pick_counts['count'] / total_games) * 100, 1)
+
+    bans = pd.concat([games['ban1'], games['ban2'], games['ban3'], games['ban4'], games['ban5']]).dropna()
+    ban_counts = bans.value_counts().reset_index().head(5)
+    ban_counts.columns = ['champion', 'count']
+    ban_counts['rate'] = round((ban_counts['count'] / total_games) * 100, 1)
+
+    return {
+        "total_games": int(total_games),
+        "side_stats": sides.to_dict(orient='records'),
+        "top_teams": teams.sort_values(by='win_rate', ascending=False).head(5).to_dict(orient='records'),
+        "top_picks": pick_counts.to_dict(orient='records'),
+        "top_bans": ban_counts.to_dict(orient='records')
+    }

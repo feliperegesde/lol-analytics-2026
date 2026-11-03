@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Target, Radar as RadarIcon, PlayCircle, Zap } from 'lucide-react';
+import { LayoutDashboard, Target, Radar as RadarIcon, PlayCircle, Zap, FileText, Globe } from 'lucide-react';
 
 export default function Sidebar({ 
   teams, selectedTeam, teamInput, handleTeamInputChange, 
@@ -7,6 +7,8 @@ export default function Sidebar({
 }: any) {
   const tabs = [
     { name: "Visão geral", icon: LayoutDashboard }, 
+    { name: "Meta Global", icon: Globe },
+    { name: "Draft & Meta", icon: FileText },
     { name: "Objetivos & Macro", icon: Target },
     { name: "Snowball & Economia", icon: Zap }, 
     { name: "Radar Avançado", icon: RadarIcon }, 

@@ -3,10 +3,12 @@ import { Loader2 } from 'lucide-react';
 import { api } from './api';
 import Sidebar from './components/Sidebar';
 import OverviewTab from './components/tabs/OverviewTab';
+import ChampionsTab from './components/tabs/ChampionsTab';
 import ObjectivesTab from './components/tabs/ObjectivesTab';
 import SnowballTab from './components/tabs/SnowballTab';
 import RadarTab from './components/tabs/RadarTab';
 import SimulatorTab from './components/tabs/SimulatorTab';
+import MetaTab from './components/tabs/MetaTab';
 
 const TEAM_COLORS: any = {
   "FURIA": { color: "text-[#D4AF37]", hex: "#D4AF37" },
@@ -20,38 +22,49 @@ const TEAM_COLORS: any = {
 const DEFAULT_COLOR = { color: "text-white", hex: "#ffffff" };
 
 export default function App() {
+  // Estados Globais
+  const [allTournaments, setAllTournaments] = useState<string[]>(["Todos"]);
+  const [globalTourney, setGlobalTourney] = useState<string>("Todos");
+  
+  // Estados da Equipe
   const [teams, setTeams] = useState<string[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string>("FURIA");
   const [teamInput, setTeamInput] = useState<string>("");
   const [tournaments, setTournaments] = useState<string[]>(["Todos"]);
   const [selectedTourney, setSelectedTourney] = useState<string>("Todos");
   const [selectedSide, setSelectedSide] = useState<string>("Ambos");
-  const [activeTab, setActiveTab] = useState<string>("Visão geral");
   
-  const [stats, setStats] = useState<any>(null);
+  // Navegação
+  const [activeTab, setActiveTab] = useState<string>("Visão geral");
   const [loading, setLoading] = useState(true);
   
+  // Dados Táticos e Estatísticas
+  const [stats, setStats] = useState<any>(null);
   const [aiStyle, setAiStyle] = useState<any>(null);
   const [goldDiff, setGoldDiff] = useState<number>(0);
   const [winProb, setWinProb] = useState<number>(50.0);
   const [dynamicLineup, setDynamicLineup] = useState<string>("Buscando...");
+  const [radarData, setRadarData] = useState<any>(null);
 
+  // Simulador
   const [opponents, setOpponents] = useState<string[]>([]);
   const [selectedRival, setSelectedRival] = useState<string>("");
   const [seriesFormat, setSeriesFormat] = useState<string>("MD5");
   const [simResult, setSimResult] = useState<any>(null);
   const [simulating, setSimulating] = useState(false);
-  const [radarData, setRadarData] = useState<any>(null);
 
   const teamConf = TEAM_COLORS[selectedTeam] || DEFAULT_COLOR;
 
+  // 1. Carrega listas iniciais (Times e Torneios Globais)
   useEffect(() => {
     api.getTeams().then(d => { 
       setTeams(d.teams); 
       if (d.teams.includes("LØS")) { setSelectedTeam("LØS"); setTeamInput("LØS"); }
     });
+    api.getAllTournaments().then(d => setAllTournaments(d.tournaments));
   }, []);
 
+  // 2. Busca dados base quando o Time selecionado muda
   useEffect(() => {
     if (!selectedTeam) return;
     api.getTournaments(selectedTeam).then(d => setTournaments(d.tournaments));
@@ -61,6 +74,7 @@ export default function App() {
     api.getRadar(selectedTeam).then(d => setRadarData(d));
   }, [selectedTeam]);
 
+  // 3. Busca as estatísticas de desempenho quando os filtros da equipe mudam
   useEffect(() => {
     if (!selectedTeam) return;
     setLoading(true);
@@ -70,10 +84,12 @@ export default function App() {
     }).catch(() => setLoading(false));
   }, [selectedTeam, selectedTourney, selectedSide]);
 
+  // 4. ML XGBoost preditor (reage à barra de ouro)
   useEffect(() => {
     api.getPrediction(goldDiff).then(d => { if(!d.error) setWinProb(d.win_probability); });
   }, [goldDiff]);
 
+  // Função do Simulador Monte Carlo
   const runSim = () => {
     if (!selectedRival) return;
     setSimulating(true);
@@ -82,6 +98,7 @@ export default function App() {
     }).catch(() => setSimulating(false));
   };
 
+  // Função para permitir digitar o time na Sidebar
   const handleTeamInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTeamInput(e.target.value);
     if (teams.includes(e.target.value)) setSelectedTeam(e.target.value);
@@ -99,33 +116,60 @@ export default function App() {
       />
 
       <main className="flex-1 flex flex-col overflow-y-auto bg-[#09090b]">
+        {/* TOPBAR FIXA */}
         <header className="h-12 border-b border-[#27272a] flex items-center justify-between px-10 text-xs">
           <div className="text-gray-500 tracking-wide">LOL <span className="mx-2">/</span> <span className="text-white">{activeTab}</span></div>
-          <div className="flex items-center gap-2 text-gray-500"><span className="w-1.5 h-1.5 rounded-sm bg-gray-400"></span> Dados da referência • <span className="text-white">{selectedTourney} • {stats?.total_games || 0} jogos</span></div>
+          <div className="flex items-center gap-2 text-gray-500">
+            <span className="w-1.5 h-1.5 rounded-sm bg-gray-400"></span> 
+            Dados da referência • <span className="text-white">{activeTab === "Meta Global" ? globalTourney : selectedTourney} • {stats?.total_games || 0} jogos</span>
+          </div>
         </header>
 
         <div className="p-10 max-w-[1400px] w-full mx-auto space-y-10">
+          
+          {/* TÍTULO E FILTROS DINÂMICOS */}
           <div className="flex justify-between items-end border-b border-[#27272a] pb-8">
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-3 font-bold">Performance Center / Temporada 2026</p>
-              <h2 className="text-5xl font-black tracking-tighter text-white uppercase mb-2">{selectedTeam} <span className={teamConf.color}>EM NÚMEROS</span></h2>
-              <p className="text-sm text-gray-400">Análise Tática, Economia e Machine Learning em uma só leitura.</p>
-            </div>
-            <div className="flex flex-col items-end gap-3">
-              <select value={selectedTourney} onChange={e => setSelectedTourney(e.target.value)} className="bg-[#121214] border border-[#27272a] px-4 py-2 rounded-md text-xs font-bold text-white focus:outline-none">
-                {tournaments.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <select value={selectedSide} onChange={e => setSelectedSide(e.target.value)} className="bg-[#121214] border border-[#27272a] px-4 py-2 rounded-md text-xs font-bold text-white focus:outline-none">
-                <option value="Ambos">Lado do Mapa: Todos</option><option value="Blue">Lado Azul</option><option value="Red">Lado Vermelho</option>
-              </select>
-            </div>
+            {activeTab === "Meta Global" ? (
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-3 font-bold">Ecossistema / Temporada 2026</p>
+                <h2 className="text-5xl font-black tracking-tighter text-white uppercase mb-2">META <span className="text-gray-400">GLOBAL</span></h2>
+                <p className="text-sm text-gray-400">Análise de todos os times, lados do mapa e status de campeões.</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-3 font-bold">Performance Center / Temporada 2026</p>
+                <h2 className="text-5xl font-black tracking-tighter text-white uppercase mb-2">{selectedTeam} <span className={teamConf.color}>EM NÚMEROS</span></h2>
+                <p className="text-sm text-gray-400">Análise Tática, Economia e Machine Learning em uma só leitura.</p>
+              </div>
+            )}
+
+            {/* SELETORES DINÂMICOS BASEADOS NA ABA */}
+            {activeTab === "Meta Global" ? (
+              <div className="flex flex-col items-end gap-3">
+                <select value={globalTourney} onChange={e => setGlobalTourney(e.target.value)} className="bg-[#121214] border border-[#27272a] px-4 py-2 rounded-md text-xs font-bold text-white focus:outline-none">
+                  {allTournaments.map(t => <option key={t} value={t}>{t === 'Todos' ? 'Mundo (Todas as Regiões)' : t}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end gap-3">
+                <select value={selectedTourney} onChange={e => setSelectedTourney(e.target.value)} className="bg-[#121214] border border-[#27272a] px-4 py-2 rounded-md text-xs font-bold text-white focus:outline-none">
+                  {tournaments.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={selectedSide} onChange={e => setSelectedSide(e.target.value)} className="bg-[#121214] border border-[#27272a] px-4 py-2 rounded-md text-xs font-bold text-white focus:outline-none">
+                  <option value="Ambos">Lado do Mapa: Todos</option><option value="Blue">Lado Azul</option><option value="Red">Lado Vermelho</option>
+                </select>
+              </div>
+            )}
           </div>
 
+          {/* RENDERIZAÇÃO DAS ABAS */}
           {loading ? (
             <div className="flex justify-center py-32"><Loader2 className={`animate-spin ${teamConf.color}`} size={48} /></div>
           ) : (
             <>
               {activeTab === "Visão geral" && <OverviewTab stats={stats} teamConf={teamConf} aiStyle={aiStyle} goldDiff={goldDiff} setGoldDiff={setGoldDiff} winProb={winProb} dynamicLineup={dynamicLineup} />}
+              {activeTab === "Meta Global" && <MetaTab teamConf={teamConf} globalTourney={globalTourney} />}
+              {activeTab === "Draft & Meta" && <ChampionsTab selectedTeam={selectedTeam} teamConf={teamConf} />}
               {activeTab === "Objetivos & Macro" && <ObjectivesTab stats={stats} teamConf={teamConf} />}
               {activeTab === "Snowball & Economia" && <SnowballTab stats={stats} teamConf={teamConf} />}
               {activeTab === "Radar Avançado" && <RadarTab formattedRadar={formattedRadar} selectedTeam={selectedTeam} teamConf={teamConf} />}
