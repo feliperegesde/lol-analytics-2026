@@ -1,29 +1,31 @@
-# 🐾 LoL Esports Analytics & AI Engine 2026
+#  LoL Esports Analytics & AI Engine 2026
 
-A high-performance analytical, predictive, and machine learning dashboard built for the 2026 professional League of Legends season, focused on analyzing FURIA's performance (and other irrelevant teams).
+A high-performance analytical, predictive and *Machine Learning* dashboard, developed to analyze professional League of Legends matches in 2026, with a focus on FURIA Esports.
 
 ---
 
-## 🚀 Tech Stack
+##  Technologies Used
 
 - **Back-end & AI:** Python, FastAPI, Pandas, PyTorch, XGBoost, Scikit-learn, Uvicorn
 - **Front-end:** React, TypeScript, Tailwind CSS, Recharts, Lucide Icons
-- **Data Source:** Oracle's Elixir (official 2026 match data)
+- **Data Sources:** Oracle's Elixir (official 2026 match data) and Data Dragon (Riot Games assets)
 
 ---
 
-## 📊 Key Features & AI Models
+##  Main Features & AI Models
 
-1. **Machine Learning Predictor (XGBoost):** Real-time win probability calculator based on in-game metrics and team performance.
-2. **Tactical DNA (Deep Learning Autoencoder):** PyTorch-based neural network that clusters and identifies each team's playstyle patterns.
-3. **Advanced Monte Carlo Simulator:** Statistical engine running 10,000 matchup scenarios to estimate win probabilities between two teams.
-4. **Snowball & Economy Tracking:** Interactive area charts showcasing the average gold advantage and how leads evolve throughout the game.
-5. **Macro & Objectives:** Deep dive into map control, including First Objective conversion rates (tower, first blood, and dragon).
-6. **Comparative Radar:** Radar charts comparing a team's fundamental metrics (Vision, Aggression, Objectives, and more) against other teams.
+1. **Global Meta:** Macro view of the LoL ecosystem, with analysis filters by region, league and team.
+2. **Draft & Meta:** Scatter charts crossing pick rate (*Pick Rate*) with win rate (*Win Rate*) for each champion.
+3. **Machine Learning Predictor (XGBoost):** Interactive calculator for the win probability of a match based on the draft and in-game metrics.
+4. **Tactical DNA (Deep Learning Autoencoder):** PyTorch neural network that groups teams by playstyle and identifies tactical profiles.
+5. **Advanced Monte Carlo Simulator:** Statistical analysis engine that runs 10,000 simulations to estimate outcomes and probabilities.
+6. **Snowball & Economy:** Interactive area charts that visually show how gold and experience advantages evolve throughout the game.
+7. **Macro & Objectives:** In-depth analysis of map control, including objective rates (dragons, barons, towers, etc.).
+8. **Comparative Radar:** Radar (*Spider*) charts that compare the key metrics of teams and players.
 
 ---
 
-## 🛠️ How to Run the Project
+##  How to Run the Project
 
 ### 1. Clone the Repository
 
@@ -36,15 +38,15 @@ cd furia-lol-analytics-2026
 
 ```bash
 cd backend
-pip install fastapi uvicorn pandas numpy scikit-learn xgboost torch
+pip install fastapi uvicorn pandas numpy scikit-learn xgboost torch requests
 uvicorn main:app --reload
 ```
 
-*(Make sure the Oracle's Elixir CSV file is inside the `backend/` folder. The AI models will automatically train upon startup.)*
+*(Make sure the Oracle's Elixir CSV file is located inside the `backend/` folder. The AI models will be trained automatically on startup.)*
 
 The back-end API will be available at `http://localhost:8000`.
 
-*(Optional)* Test the AI engine directly:
+*(Optional)* Test the AI engine directly from the terminal:
 
 ```bash
 python test_ai.py
@@ -61,30 +63,32 @@ npm install recharts lucide-react
 npm run dev
 ```
 
-The front-end will be available at `http://localhost:5173`.
+The *front-end* will be available at `http://localhost:5173`.
 
 ---
 
 ## 📌 Repository Structure
 
-```plaintext
+```text
 furia-lol-analytics-2026/
 ├── backend/
 │   ├── 2026_LoL_esports_match_data_from_OraclesElixir.csv
 │   ├── main.py              # FastAPI entry point
-│   ├── api_routes.py        # API Endpoints mapping
-│   ├── ml_engine.py         # PyTorch Autoencoder, XGBoost & Data processing
-│   ├── test_ai.py           # Diagnostic script for AI models
+│   ├── api_routes.py        # API endpoint mapping
+│   ├── ml_engine.py         # PyTorch Autoencoder, XGBoost & Data Processing
+│   ├── test_ai.py           # Diagnostic script for the AI models
 │   └── requirements.txt
 ├── frontend/
 │   ├── public/
 │   ├── src/
-│   │   ├── components/      # Componentized architecture
-│   │   │   ├── tabs/        # Individual tab views (Overview, Radar, Simulator, etc.)
-│   │   │   └── Sidebar.tsx  # Navigation sidebar
-│   │   ├── api.ts           # Centralized Fetch/HTTP requests
-│   │   ├── App.tsx          # Main React component
-│   │   ├── index.css        # Tailwind global directives
+│   │   ├── assets/          # (Optional) Downloaded team icons
+│   │   ├── components/      # Component-based architecture
+│   │   │   ├── tabs/        # Individual tab views (Overview, Meta, etc.)
+│   │   │   ├── CustomTooltip.tsx  # Custom Recharts tooltip
+│   │   │   └── Sidebar.tsx  # Side navigation bar with search field
+│   │   ├── api.ts           # Centralized HTTP requests (Fetch)
+│   │   ├── App.tsx          # Main React component with state routing
+│   │   ├── index.css        # Global Tailwind directives
 │   │   └── main.tsx
 │   ├── index.html
 │   ├── package.json
@@ -94,6 +98,6 @@ furia-lol-analytics-2026/
 
 ---
 
-## 📄 License
+##  License
 
-Independent project for portfolio and study purposes. No official affiliation with FURIA Esports or Riot Games. All match data belongs to Oracle's Elixir.
+Independent project created for portfolio and *Data Science* study purposes. Not officially affiliated with FURIA Esports or Riot Games. All raw match data belongs to Oracle's Elixir, and the images/icons belong to the Riot Games database (Data Dragon).
